@@ -15,6 +15,7 @@ class Articulacion{
       float max_speed;
       int offSet;
       int currentPosition;
+      int positionDesire;
 
 Articulacion(
     int _dir_pin,
@@ -72,11 +73,17 @@ Articulacion(
     
     while (true) {
         motor.runSpeedToPosition();
-        if (motor.currentPosition() == floor(abs(positionTarget)*steps_per_unit)) {
+        //Serial.println(motor.currentPosition());
+        if (floor(abs(positionTarget)*steps_per_unit) + offSet < 0){
+          positionDesire = (-1)*(floor(abs(positionTarget)*steps_per_unit) + offSet);
+        }
+        if (motor.currentPosition() == positionDesire) {
             Serial.println(millis()-startTime);
+            //Serial.println(motor.currentPosition());
+            //Serial.println(floor(abs(positionTarget)*steps_per_unit));
             break;
         }
-        if(millis()-startTime > 10000){
+        if(millis()-startTime > 20000){
           break;
         }
     }

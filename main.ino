@@ -3,7 +3,7 @@
 #define dirPin1 36
 #define stepPin1 28
 #define sensorPin1 43
-#define stepsPerUnit1 44.4444
+#define stepsPerUnit1 2.777
 
 float position;
 float speed;
