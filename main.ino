@@ -3,11 +3,12 @@
 #define dirPin1 36
 #define stepPin1 28
 #define sensorPin1 43
-#define stepsPerUnit1 2.777
+#define stepsPerUnit1 2.7777
 
 float position;
 float speed;
-
+unsigned long sum1=0;
+unsigned long sum2=0;
 Articulacion articulacion1(dirPin1,stepPin1,sensorPin1,stepsPerUnit1);
 
 void setup() {
@@ -24,7 +25,17 @@ void loop() {
     Serial.print(",");
     Serial.println(speed);
     //articulacion1.moveTo(position,speed);
-    articulacion1.calibrate(position,speed);
+    for(int i=0;i<2;i++){
+      Serial.println(i+1);
+      sum1 = sum1 + articulacion1.calibrate(position,speed);
+      delay(2000);
+      sum2 = sum2 + articulacion1.calibrate(position,-speed);
+      delay(2000);
+    }
+    Serial.println(sum1/2);
+    Serial.println(sum2/2);
+    sum1 = 0;
+    sum2 = 0;
   }
   //articulacion1.motor.runSpeedToPosition();
   
