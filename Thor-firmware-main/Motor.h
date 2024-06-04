@@ -42,10 +42,9 @@ Articulacion(
       bool offSetFlag = false;
       while(!offSetFlag){
         motor.moveTo((int)(360*steps_per_unit));
-        motor.setSpeed(100*steps_per_unit);
+        motor.setSpeed(50*steps_per_unit);
         motor.runSpeedToPosition();
-        //offSetFlag = !digitalRead(sensor_pin);
-        Serial.println(digitalRead(sensor_pin));
+        offSetFlag = !digitalRead(sensor_pin);
       }
       motor.stop();
       motor.setSpeed(0);
@@ -66,24 +65,18 @@ Articulacion(
       motor.setSpeed(speed_target*steps_per_unit);
     };
 
-    unsigned long calibrate(float positionTarget, float speedTarget){
+    void calibrate(float positionTarget, float speedTarget){
       moveTo(positionTarget, speedTarget);
       unsigned long startTime = millis();
       unsigned long lastSerialPrintTime = 0;
     
     while (true) {
-        //motor.runSpeedToPosition();
-        motor.runSpeed();
-        //Serial.println("While...");
-        //if (motor.currentPosition() == floor(abs(positionTarget)*steps_per_unit) + offSet) {
-        if (!digitalRead(sensor_pin) && (millis()-startTime) > 1000) {
-            Serial.println(motor.currentPosition());
-            //Serial.println(floor(abs(positionTarget)*steps_per_unit)t); + offSe
-            return (millis()-startTime);
+        motor.runSpeedToPosition();
+        if (motor.currentPosition() == floor(abs(positionTarget)*steps_per_unit)) {
+            Serial.println(millis()-startTime);
             break;
         }
-        if(millis()-startTime > 20000){
-          Serial.println(motor.currentPosition());
+        if(millis()-startTime > 10000){
           break;
         }
     }
