@@ -30,11 +30,13 @@ A56 = lambda q6: np.array([[np.cos(q6), np.sin(q6), 0, 0],
                 [np.sin(q6), np.cos(q6), 0, 0],
                 [     0,         0,       1,       l4],
                 [     0,         0,       0,        1]]) """
-T = lambda phi,theta,thi: np.array([[np.cos(phi)*np.cos(theta), np.cos(phi)*np.sin(theta)*np.cos(thi)+np.sin(phi)*np.sin(thi), np.cos(phi)*np.sin(theta)*np.sin(thi)+np.sin(phi)*np.cos(thi), 0],
-                           [np.sin(phi)*np.cos(theta), np.sin(phi)*np.sin(theta)*np.sin(thi)+np.cos(phi)*np.cos(thi), np.sin(phi)*np.sin(theta)*np.cos(thi)+np.cos(phi)*np.sin(thi), 0],
+T = lambda phi,theta,thi: np.array([[np.cos(phi)*np.cos(theta), np.cos(phi)*np.sin(theta)*np.cos(thi)-np.sin(phi)*np.sin(thi), np.cos(phi)*np.sin(theta)*np.sin(thi)+np.sin(phi)*np.cos(thi), 0],
+                           [np.sin(phi)*np.cos(theta), np.sin(phi)*np.sin(theta)*np.sin(thi)+np.cos(phi)*np.cos(thi), np.sin(phi)*np.sin(theta)*np.cos(thi)-np.cos(phi)*np.sin(thi), 0],
                            [-np.sin(theta), np.cos(theta)*np.sin(thi), np.cos(theta)*np.cos(thi), 0],
                            [0, 0, 0, 1]])
-
+#phi = z = alfa
+# theta = y = beta
+# thi = x = gama
 def multMatrizial(A,B):
     prod = []
     fila = []
@@ -58,7 +60,7 @@ def inverse_kinematics(x, y,z):
         theta1_rad = np.pi/2
     else:
         theta1_rad = np.arctan(y/x)
-    cosq3 = (x**2 + y**2 + z**2 - l2**2 - l3**2) / (2*l2*l3)
+    cosq3 = (x**2 + y**2 + (z-l1)**2 - l2**2 - l3**2) / (2*l2*l3)
     if abs(cosq3) > 1:
         raise TypeError("[NAN]")
     theta3_rad = np.arctan(np.sqrt(1-(cosq3)**2)/cosq3)
@@ -100,8 +102,9 @@ while(True):
     pr = msg[0:3]
     orient = msg[3:6]
     #Calculo del vector de orientacion del eje de la herramienta con respecto al eje de la base
-    Transform = T(int(orient[0]), int(orient[1]), int(orient[2])) #Matriz de tranformacion directa
-    pm = pr - np.cross(Transform[0:3,2],d) #Calculo de punto muñeca
+    Transform = T(int(orient[0])*np.pi/180, int(orient[1])*np.pi/180, int(orient[2])*np.pi/180) #Matriz de tranformacion directa
+    #pm = pr - np.cross(Transform[0:3,2],d) #Calculo de punto muñeca
+    pm  =  [20, 18, 40]
     #print(pm) #debug
     #print(d)  #debug
     try:
@@ -122,9 +125,9 @@ while(True):
         #cos(q5) = R36(2,2)
         #sen(q4) = R36(0,2)/sen(q5)
         #sen(q6) = R36(2,1)/sen(q5)   
-        theta5_rad = np.arccos(R36[2,2]) 
-        theta4_rad = np.arcsin(R36[0,2]/np.sin(theta5_rad))
-        theta6_rad = np.arcsin(R36[2,1]/np.sin(theta5_rad))
+        theta5_rad = -np.arccos(R36[2,2]) 
+        theta4_rad = np.arcsin(R36[1,2]/np.sin(theta5_rad))
+        theta6_rad = -np.arcsin(R36[2,1]/np.sin(theta5_rad))
         theta4_deg = np.degrees(theta4_rad)
         theta5_deg = np.degrees(theta5_rad)
         theta6_deg = np.degrees(theta6_rad)
