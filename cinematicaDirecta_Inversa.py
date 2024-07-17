@@ -10,21 +10,21 @@ A01 = lambda q1: np.array([ [np.cos(q1),    0, np.sin(q1),     0],
                             [np.sin(q1),    0, -np.cos(q1),    0],
                             [     0,        1,       0,       l1],
                             [     0,        0,       0,        1]])
-A12 = lambda q2: np.array([ [np.cos(q2+np.pi/2), -np.sin(q2+np.pi/2),   0,  l2*np.cos(q2+np.pi/2)],
-                            [np.sin(q2+np.pi/2), np.cos(q2+np.pi/2),    0,  l2*np.sin(q2+np.pi/2)],
+A12 = lambda q2: np.array([ [-np.sin(q2), -np.cos(q2),   0,  -l2*np.sin(q2)],
+                            [np.cos(q2), -np.sin(q2),    0,  l2*np.cos(q2)],
                             [       0,                  0,              1,                      0],
                             [       0,                  0,              0,                      1]])
-A23 = lambda q3: np.array([ [np.cos(q3-np.pi/2), 0, -np.sin(q3-np.pi/2),    0],
-                            [np.sin(q3-np.pi/2), 0,  np.cos(q3-np.pi/2),    0],
-                            [     0,            -1,       0,                0],
-                            [     0,             0,       0,                1]])
+A23 = lambda q3: np.array([ [np.sin(q3), 0, np.cos(q3),    0],
+                            [-np.cos(q3), 0,  np.sin(q3),    0],
+                            [     0,            -1,       0,  0],
+                            [     0,             0,       0,  1]])
 A34 = lambda q4: np.array([ [np.cos(q4),    0,  np.sin(q4), 0],
                             [np.sin(q4),    0, -np.cos(q4), 0],
                             [     0,        1,       0,    l3],
                             [     0,        0,       0,     1]])
-A45 = lambda q5: np.array([ [np.cos(q5+np.pi/2),    0,  np.sin(q5+np.pi/2), 0],
-                            [np.sin(q5+np.pi/2),    0, -np.cos(q5+np.pi/2), 0],
-                            [     0,                1,          0,          0],
+A45 = lambda q5: np.array([ [np.cos(q5),    0,  -np.sin(q5), 0],
+                            [np.sin(q5),    0, np.cos(q5), 0],
+                            [     0,                -1,          0,          0],
                             [     0,                0,          0,          1]])
 A56 = lambda q6: np.array([ [np.cos(q6), -np.sin(q6), 0,        0],
                             [np.sin(q6),  np.cos(q6), 0,        0],

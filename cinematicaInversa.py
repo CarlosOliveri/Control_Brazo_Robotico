@@ -1,42 +1,48 @@
 import numpy as np
 import serial, time
+
+COM = 'COM5'
+##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
+#arduino = serial.Serial(COM,9600)
+time.sleep(2)
+
 l1 = 20.2 #cm
 l2 = 16 #cm
 l3 = 19.5 #cm
 l4 = 6.715 #cm
 d = np.array([0, 0, l4])
 
-A01 = lambda q1: np.array([[np.cos(q1), 0, np.sin(q1),  0],
-               [np.sin(q1), 0, -np.cos(q1), 0],
-               [     0,         1,       0,        l1],
-               [     0,         0,       0,         1]])
-A12 = lambda q2: np.array([[np.cos(q2+np.pi/2), -np.sin(q2+np.pi/2), 0, l2*np.cos(q2+np.pi/2)],
-                [np.sin(q2+np.pi/2), np.cos(q2+np.pi/2),  0, l2*np.sin(q2+np.pi/2)],
-                [     0,               0,         1,                 0],
-                [     0,               0,         0,                 1]])
-A23 = lambda q3: np.array([[np.cos(q3-np.pi/2), 0, -np.sin(q3-np.pi/2), 0],
-                [np.sin(q3-np.pi/2), 0,  np.cos(q3-np.pi/2), 0],
-                [     0,        -1,       0,         0],
-                [     0,         0,       0,         1]])
-A34 = lambda q4: np.array([[np.cos(q4), 0,  np.sin(q4), 0],
-                [np.sin(q4), 0, -np.cos(q4), 0],
-                [     0,         1,       0,        l3],
-                [     0,         0,       0,         1]])
-A45 = lambda q5: np.array([[np.cos(q5+np.pi/2), 0,  np.sin(q5+np.pi/2), 0],
-                [np.sin(q5+np.pi/2), 0, -np.cos(q5+np.pi/2), 0],
-                [     0,         1,       0,         0],
-                [     0,         0,       0,         1]])
-A56 = lambda q6: np.array([[np.cos(q6), -np.sin(q6), 0, 0],
-                [np.sin(q6),    np.cos(q6), 0, 0],
-                [     0,         0,       1,       l4],
-                [     0,         0,       0,        1]])
+A01 = lambda q1: np.array([ [np.cos(q1),    0, np.sin(q1),     0],
+                            [np.sin(q1),    0, -np.cos(q1),    0],
+                            [     0,        1,       0,       l1],
+                            [     0,        0,       0,        1]])
+A12 = lambda q2: np.array([ [-np.sin(q2), -np.cos(q2),   0,  -l2*np.sin(q2)],
+                            [np.cos(q2), -np.sin(q2),    0,  l2*np.cos(q2)],
+                            [       0,                  0,              1,                      0],
+                            [       0,                  0,              0,                      1]])
+A23 = lambda q3: np.array([ [np.sin(q3), 0, np.cos(q3),    0],
+                            [-np.cos(q3), 0,  np.sin(q3),    0],
+                            [     0,            -1,       0,  0],
+                            [     0,             0,       0,  1]])
+A34 = lambda q4: np.array([ [np.cos(q4),    0,  np.sin(q4), 0],
+                            [np.sin(q4),    0, -np.cos(q4), 0],
+                            [     0,        1,       0,    l3],
+                            [     0,        0,       0,     1]])
+A45 = lambda q5: np.array([ [np.cos(q5),    0,  -np.sin(q5), 0],
+                            [np.sin(q5),    0, np.cos(q5), 0],
+                            [     0,                -1,          0,          0],
+                            [     0,                0,          0,          1]])
+A56 = lambda q6: np.array([ [np.cos(q6), -np.sin(q6), 0,        0],
+                            [np.sin(q6),  np.cos(q6), 0,        0],
+                            [     0,         0,       1,       l4],
+                            [     0,         0,       0,        1]])
 T = lambda phi,theta,thi: np.array([[np.cos(phi)*np.cos(theta), np.cos(phi)*np.sin(theta)*np.sin(thi)-np.sin(phi)*np.sin(thi), np.cos(phi)*np.sin(theta)*np.cos(thi)+np.sin(phi)*np.sin(thi), 0],
                                     [np.sin(phi)*np.cos(theta), np.sin(phi)*np.sin(theta)*np.sin(thi)+np.cos(phi)*np.cos(thi), np.sin(phi)*np.sin(theta)*np.cos(thi)-np.cos(phi)*np.sin(thi), 0],
                                     [       -np.sin(theta),                 np.cos(theta)*np.sin(thi),                              np.cos(theta)*np.cos(thi),                                0],
                                     [             0,                                     0,                                                      0,                                           1]])
-#phi = z = alfa
-# theta = y = beta
-# thi = x = gama
+#phi = pmz = alfa
+# theta = pmy = beta
+# thi = pmx = gama
 
 def direct_kinematics(q1,q2,q3,q4,q5,q6):
     _0A2 = np.dot(A01(q1),A12(q2))
@@ -46,97 +52,121 @@ def direct_kinematics(q1,q2,q3,q4,q5,q6):
     _0A6 = np.dot(_0A5,A56(q6))
     return _0A6     
 
-def inverse_kinematics(x, y,z):
-    # Calcula theta3 usando la ley del coseno
-    if x == 0:
-        theta1_rad = np.pi/2
-    else:
-        theta1_rad = np.arctan(y/x)
-    cosq3 = (x**2 + y**2 + (z-l1)**2 - l2**2 - l3**2) / (2*l2*l3)
-    if abs(cosq3) > 1:
-        raise TypeError("[NAN]")
-    theta3_rad = np.arctan(np.sqrt(1-(cosq3)**2)/cosq3)
-    u = np.sqrt(x**2 + y**2 + (z-l1)**2)
-    theta2_rad =  np.pi/2 - (np.arctan((z-l1)/np.sqrt(x**2 + y**2)) + np.arccos((l2**2 + u**2 - l3**2)/(2*l2*u)))
+def inverse_kinematics(x, y,z, a, b, g):
+    signoQ3=-1
+    codo = 1
+    
+    #Calculo del vector de orientacion del eje de la herramienta con respecto al eje de la base Angulos de Euler
+    alpha=a*np.pi/180.0
+    beta=b*np.pi/180.0
+    gamma=g*np.pi/180.0
+    Transform = T(alpha, beta, gamma) #Matripmz de tranformacion directa
+    
+    n = Transform[0,0:3]
+    o = Transform[1,0:3]
+    a = Transform[2,0:3]
+    
+    #Calculo de punto muñeca
+    pmx = x - l4*a[0]
+    pmy = y - l4*a[1]
+    pmz = z - l4*a[2] -l1
+    print("Punto Muñeca Calculado: ")       
+    print(pmx,pmy,pmz) #debug
+    
+    # Halla q1
+    q1 = np.arctan2(pmy,pmx)
+    if q1 > np.pi or q1 < -np.pi:
+        print("Fuera de rango")
+        return None
+            
+    #Hallar q3
+    cosq3=(pmx**2+pmy**2+pmz**2-l2**2-l3**2)/(2*l2*l3)
+    sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
+    q3=np.arctan2(sinq3,cosq3)
+    if q3 > np.pi/1.9 or q3 < -np.pi/1.9:
+        signoQ3*=-1
+        sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
+        q3=np.arctan2(sinq3,cosq3)
+        if q3 > np.pi/1.9 or q3 < -np.pi/1.9:
+            print("fuera del rango")
+            return None
+    #Hallar q2
+    q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
+    if q2 > np.pi/1.9 or q2 < -np.pi/1.9:
+        codo*=-1
+        q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
+        if q2 > np.pi/1.9 or q2 < -np.pi/1.9:
+            print("fuera del rango")
+            return None
+        
+    cosq1=np.cos(q1)
+    cosq2=np.cos(q2)
+    sinq1=np.sin(q1)
+    sinq2=np.sin(q2) 
+    sinq3=np.sin(q3) 
+    
+    """ A03 = np.dot(A01(q1),A12(q2))# los angulos aca deben estar en radianes
+    A03 = np.dot(A03,A23(q3))
+    #print(A03)#debug
+    R03_inv = A03[0:3,0:3].T
+    #print(R03_inv)#debug
+    R36 = np.dot(R03_inv,Transform[0:3,0:3]) 
+    
+    q5 = -np.arccos(R36[2,2]) 
+    q4 = np.arccos(R36[1,2]/np.sin(q5))
+    q6 = -np.arcsin(R36[2,1]/np.sin(q5))
+    q4 = np.degrees(q4)
+    q5 = np.degrees(q5)
+    q6 = np.degrees(q6) """
+    
+    q5=np.arccos(-a[0]*cosq1*(cosq2*sinq3+cosq3*sinq2)-a[1]*sinq1*(cosq2*sinq3+cosq3*sinq2)+a[2]*(cosq2*cosq3-sinq2*sinq3))
+    if q5 > np.pi/2 or q5 < -np.pi/2:
+        print("Q5 fuera del rango")
+        return None
+    sinq5=np.sin(q5)
 
+    q4=np.arctan2((cosq1*a[1]-sinq1*a[0]),abs(a[2]*(cosq2*sinq3+cosq3*sinq2)+(cosq2*cosq3-sinq2*sinq3)*(a[1]*sinq1+a[0]*cosq1)))
+
+    sinq4=np.sin(q4)
+    cosq4=np.cos(q4)
+
+    q6=np.arcsin(n[0]*(-2*cosq4*sinq1+cosq1*sinq4*(-cosq2*cosq3+sinq2*sinq3))+n[1]*(cosq1*cosq4+sinq1*sinq4*(sinq2*sinq3-cosq2*cosq3))-n[2]*sinq4*(cosq2*sinq3+cosq3*sinq2))
+    
     # Convertir a grados
-    """ theta1_deg = np.degrees(theta1_rad)
-    theta2_deg = np.degrees(theta2_rad)
-    theta3_deg = np.degrees(theta3_rad) """
-    print(theta2_rad,theta3_rad)
-    #print(cosq3) # debug
-    if abs(theta2_rad) > np.pi/2:
-        raise Exception("[Fuera de rango]")
-    if abs(theta3_rad) > np.pi/2:
-        raise Exception("[Fuera de rango]")
+    q1 = np.degrees(q1).round(decimals=3)
+    q2 = np.degrees(q2).round(decimals=3)
+    q3 = np.degrees(q3).round(decimals=3)
+    q4 = np.degrees(q4).round(decimals=3)
+    q5 = np.degrees(q5).round(decimals=3)
+    q6 = np.degrees(q6).round(decimals=3)
+    #print(str(q1) + str(q2) + str(q3) + str(q4) + str(q5) + str(q6))
+   
+    return q1, q2, q3, q4, q5, q6
 
-    return theta1_rad, theta2_rad, theta3_rad
-
-""" COM = 'COM5'
-##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
-#arduino = serial.Serial(COM,9600)
-time.sleep(2)
- """
 while(True):
     msg = input("[Escriba el comando] => ")
     msg = msg.strip()
     msg = msg.split()
     for k in range(0,len(msg)):
         msg[k] = float(msg[k])
-    #print(msg) #debug
-    pr = msg[0:3]
-    orient = msg[3:6]
-    #Calculo del vector de orientacion del eje de la herramienta con respecto al eje de la base
-    Transform = T(float(orient[0])*np.pi/180, float(orient[1])*np.pi/180, float(orient[2])*np.pi/180) #Matriz de tranformacion directa
-    #pm = pr 
-    #print(Transform[0:3,2])
-    pm = pr - Transform[0:3,2]*l4 #Calculo de punto muñeca
-    #pm  =  [20, 18, 40] #Para probar directamente el punto muñeca
-    #print(pm) #debug
-    #print(d)  #debug
-    try:
-        theta1_rad, theta2_rad, theta3_rad = inverse_kinematics(float(pm[0]), float(pm[1]), float(pm[2]))
-        #Conversion de angulos a decimal
-        theta1_deg = np.degrees(theta1_rad)
-        theta2_deg = np.degrees(theta2_rad)
-        theta3_deg = np.degrees(theta3_rad)
-        A03 = np.dot(A01(theta1_rad),A12(theta2_rad))# los angulos aca deben estar en radianes
-        A03 = np.dot(A03,A23(theta3_rad))
-        """ R03 = np.array([ #de chatgpt
-        [np.cos(theta1_rad) * np.cos(theta2_rad + theta3_rad), -np.sin(theta1_rad), np.cos(theta1_rad) * np.sin(theta2_rad + theta3_rad)],
-        [np.sin(theta1_rad) * np.cos(theta2_rad + theta3_rad), np.cos(theta1_rad), np.sin(theta1_rad) * np.sin(theta2_rad + theta3_rad)],
-        [-np.sin(theta2_rad + theta3_rad), 0, np.cos(theta2_rad + theta3_rad)]]) """
-        #print(A03)#debug
-        R03_inv = A03[0:3,0:3].T
-        #print(R03_inv)#debug
-        R36 = np.dot(R03_inv,Transform[0:3,0:3])
-        #R36 = np.dot(R03.T, Transform[0:2,0:2]) de chatgpt
-        print(R36) #debug
         
-        #Despejes para optener q4,q5,q6
-        #cos(q5) = R36(2,2)
-        #sen(q4) = R36(0,2)/sen(q5)
-        #sen(q6) = R36(2,1)/sen(q5)   
-        theta5_rad = -np.arccos(R36[2,2]) 
-        theta4_rad = np.arccos(R36[1,2]/np.sin(theta5_rad))
-        theta6_rad = -np.arcsin(R36[2,1]/np.sin(theta5_rad))
-        theta4_deg = np.degrees(theta4_rad)
-        theta5_deg = np.degrees(theta5_rad)
-        theta6_deg = np.degrees(theta6_rad)
-        msg =  str(theta1_deg) + " , " + str(theta2_deg) + " , " + str(theta3_deg) + " , " + str(theta4_deg) + " , " + str(theta5_deg) + " , " + str(theta6_deg) + " , " + str(msg[-1])        
-        print("[Mensaje enviado] => " + msg) 
-        print("Cinematica Directa:")
-        print(direct_kinematics(theta1_rad,theta2_rad,theta3_rad,theta4_rad,theta5_rad,theta6_rad))
-        #print(A03)
+    if msg[-1] <= 0 or msg[-1] > 20:
+        print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
+    else:
+        #print(msg) #debug
+        pr = msg[0:3]
+        orient = msg[3:6]
+        
+        try:
+            q1, q2, q3, q4, q5, q6 = inverse_kinematics(pr[0], pr[1], pr[2], orient[0], orient[1], orient[2])  
+            msg =  str(q1) + " , " + str(q2) + " , " + str(q3) + " , " + str(q4) + " , " + str(q5) + " , " + str(q6) + " , " + str(msg[-1])        
+            print("[Mensaje enviado] => " + msg) 
+            print("Cinematica Directa:")
+            print(direct_kinematics(q1,q2,q3,q4,q5,q6))
+        except:
+            print("Valores no validos, Verifique y vuelva a intentar!")
+        
         ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
         #arduino.write(msg.encode())
         #respuesta = arduino.readline().decode().strip()
-        #print("[Mensaje Recibido] => " + respuesta)
-         
-    except TypeError:
-        print("[NAN] Combinacion de posicion no valida")
-    except ZeroDivisionError:
-        print("[Division entre cero]")
-    """ except Exception:
-        print("[Fuera de Rango]") """
-    
+        #print("[Mensaje Recibido] => " + respuesta)}
