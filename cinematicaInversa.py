@@ -4,8 +4,8 @@ from scipy.interpolate import CubicSpline
 
 COM = 'COM5'
 ##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
-arduino = serial.Serial(COM,9600)
-time.sleep(2)
+#arduino = serial.Serial(COM,9600)
+#time.sleep(2)
 
 l1 = 20.2 #cm
 l2 = 16 #cm
@@ -233,9 +233,11 @@ def Interpolacion(points):
     interpolated_points = np.vstack((x_interpolated, y_interpolated, z_interpolated)).T
 
     for k in interpolated_points:
-        r,q,phi = cartesian2polar(k[0], k[1], k[2]) #Max = 40.415 Min = 25.224 
         k[2] = k[2] - 20.2
+        r,q,phi = cartesian2polar(k[0], k[1], k[2]) #Max = 40.415 Min = 25.224 
         print(r,q,phi)
+        if phi > - 49:
+            phi = 48
         if r < 26:
             r = 26
             x, y, z = polar2cartesian(r,q,phi)
@@ -256,13 +258,14 @@ def Interpolacion(points):
 def Envio_mensaje(msg):
     #Arriba hay que descomentar la definicion del objeto arduino
     #Arduino en tiempo de debugger es NONE
-    arduino.write(msg.encode())
-    #pass
+    #arduino.write(msg.encode())
+    pass
 
 def Envio_Interpolacion(array):
     cont = 0
-    algo = arduino.readline().decode().strip()
-    print(algo)
+    #avisoInicio = arduino.readline().decode().strip()
+    #print(avisoInicio)
+    msg = "STR"
     for k in array:
         q1 = k[0]
         q2 = k[1]
@@ -273,17 +276,16 @@ def Envio_Interpolacion(array):
             q2 = 0
         if np.isnan(q3):
             q3 = 0
-        #msg =  "STR" +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type) 
-        msg = str(q1) + "," + str(q2) + "," + str(q3) + "," + str(type)         
-        Envio_mensaje(msg)
-        print("[Mensaje enviado] => " + str(cont) + " " + msg)
-        while respondio == False:
-            #time.sleep(2) #simulacion
-            response = ""
-            response = arduino.readline().decode().strip()
-            print(response)
-            if response == "Listo":
-                respondio = True
+        msg = msg + " " + str(q1) + " " + str(q2) + " " +str(q3)
+    Envio_mensaje(msg)
+    print("[Mensaje enviado] => " + msg)
+    """ while respondio == False:
+        time.sleep(2) #simulacion
+        response = "Listo"
+        #response = arduino.readline().decode().strip()
+        print(response)
+        if response == "Listo":
+            respondio = True """
 
         
 
@@ -292,9 +294,13 @@ while(True):
     msg = input("[Escriba el comando] => ")
     msg = msg.strip()
     msg = msg.split()
-    for k in range(1,len(msg)):
-        msg[k] = float(msg[k])
-    funcion = msg[0]
+    try:
+        for k in range(1,len(msg)):
+            msg[k] = float(msg[k])
+        funcion = msg[0]
+    except:
+        print("Mensaje Vacio")
+        continue
     
     type = 1 # Valor por defecto
     
@@ -312,6 +318,25 @@ while(True):
                 Envio_mensaje(msg)
             except:
                 print("Valores no validos, Verifique y vuelva a intentar!")
+        continue
+    
+    if funcion == "S00":
+        if len(msg) < 1 or len(msg) > 1:
+            print("No se incluyeron todos los parametros")
+        else:
+            msg = funcion
+            print("[Mensaje enviado] => " + msg)
+            Envio_mensaje(msg)
+        continue
+    
+    if funcion == "G00":
+        if len(msg) < 1 or len(msg) > 1:
+            print("No se incluyeron todos los parametros")
+        else:
+            msg = funcion
+            print("[Mensaje enviado] => " + msg)
+            Envio_mensaje(msg)
+        continue
     if funcion == "G1":
         if len(msg) < 5 or len(msg) > 5:
             print("No se incluyeron todos los parametros: [G# x y z type]")
@@ -321,12 +346,16 @@ while(True):
             print(pm)
             try: 
                 q1, q2, q3 = inverse_kinematics_G1(pm[0], pm[1], pm[2])
-                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)         
+                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)
+                #msg = str(q1) + "," + str(q2) + "," + str(q3) + "," + str(type)         
                 print("[Mensaje enviado] => " + msg)
                 Envio_mensaje(msg)
             except:
                 print("Valores no validos, Verifique y vuelva a intentar!")
+        continue
     if funcion == "G2":
+        q = msg[1]
+        alfa = msg[2]
         velocidad = msg[-1]
         if velocidad <= 0 or velocidad > 20:
             print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
@@ -334,9 +363,31 @@ while(True):
             if len(msg) < 4 or len(msg) > 4:
                 print("Cantidad de parametros incorrecto: [G# # alpha vel]")
             else:
-                msg =  funcion +" "+ str(msg[1]) + " " + str(msg[2]) + " " + str(velocidad)         
+                if  q != 1:
+                    if abs(alfa) > 90:
+                        print("EL ANGULO ESTA FUERA DE RANGO")
+                        continue 
+                msg =  funcion +" "+ str(q) + " " + str(alfa) + " " + str(velocidad)         
                 print("[Mensaje enviado] => " + msg)
                 Envio_mensaje(msg)
+        continue
+    
+    if funcion == "G13":
+        q = msg[1]
+        alfa = msg[2]
+        velocidad = msg[3]
+        beta1 = msg[4]
+        beta2 = msg[5]
+        if velocidad <= 0 or velocidad > 20:
+            print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
+        if  q != 1:
+            if abs(alfa) > 90 or abs(beta1) > 90 or abs(beta2) > 90:
+                print("UNO DE LOS ANGULOS ESTA FUERA DE RANGO")
+                continue
+        msg = funcion + " " + str(q) + " " + str(alfa) + " " + str(velocidad) + " " + str(beta1) + " " + str(beta2)
+        print("[Mensaje enviado] => " + msg)
+        Envio_mensaje(msg)
+        continue
     if funcion == "STR":
         points = np.array([ [0, 0, 0],        # Punto 1
                             [0, 0, 0],  # Punto 2
@@ -354,11 +405,23 @@ while(True):
         #Verificar si los puntos estan en el espacio de la tarea
         arrayQs = []
         interpolated_points = Interpolacion(points)
-        for k in interpolated_points:
-            q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
-            arrayQs.append([q1,q2,q3])
-        Envio_Interpolacion(arrayQs)
-        
+        try:
+            for k in interpolated_points:
+                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
+                arrayQs.append([q1,q2,q3])
+            Envio_Interpolacion(arrayQs)
+        except:
+            print("UNO DE LOS PUNTOS DE LA INTERPOLACION ESTA FUERA DEL RANGO")
+        continue
+    if funcion == "GTR":
+        if len(msg) > 1 or len(msg) < 1:
+            print("Cantidad de parametros incorrecto")
+        else:
+            msg = funcion
+            print("[Mensaje enviado] => " + msg)
+            Envio_mensaje(msg)
+        continue
+    print("NO CORRESPONDE A NINGUN COMANDO")
     
     ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
     #arduino.write(msg.encode())
@@ -366,8 +429,8 @@ while(True):
     #print("[Mensaje Recibido] => " + respuesta)}
     
 #Funciones
-# STR 15 15 35 21.7 13.2 37.7 23.9 12.9 43.5 10.2 14.5 44.2 -8 16.5 45.9 -12.4 15.7 45.7
-#G1 16.38 19.53 23.95 1
+# STR 15 15 35 21.7 13.2 37.7 23.9 12.9 43.5 10.2 14.5 44.2 -8 16.5 45.9 -12.4 15.7 45.7  Movimiento en S en el espacio
+# STR 15 25 28.2 0 25 43.2 -15 25 28.2 0 25 13.2 15 25 28.2 0 25 43.2 Movimiendo de circulo en el plano Y
 #G1 12 15 45.2
 #G1 13 -15 404
 #G1 -15 12 45

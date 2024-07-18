@@ -4,13 +4,21 @@ from scipy.interpolate import CubicSpline
 
 # Definir los 5 puntos (x, y, z) a través de los cuales debe pasar la trayectoria
 points = np.array([
+    [15, 25,  28.2],        # Punto 1
+    [0,  25,  43.2],  # Punto 2
+    [-15, 25, 28.2],  # Punto 4
+    [ 0, 25, 13.2],  # Punto 3
+    [15,  25,  28.2],   # Punto 5 ##Leer
+    [0,  25,  43.2]
+]) # STR 1 0 2 0.1 0.2 0.3 0.2 0.1 0.4 0.3 0.4 0.5 0.4 0.3 0.6  una s en el espacio
+
+""" points = np.array([
     [15, 15,  35],        # Punto 1
     [21.7,  13.2,  37.7],  # Punto 2
     [23.9, 12.9, 43.5],  # Punto 4
     [ 10.2, 14.5, 44.2],  # Punto 3
     [-8,  16.5,  45.9],   # Punto 5 ##Leer
-    [-12.4,  15.7,  45.7]
-]) # STR 1 0 2 0.1 0.2 0.3 0.2 0.1 0.4 0.3 0.4 0.5 0.4 0.3 0.6
+    [-12.4,  15.7,  45.7] ])"""
 
 # Extraer los puntos individuales
 x_points = points[:, 0]

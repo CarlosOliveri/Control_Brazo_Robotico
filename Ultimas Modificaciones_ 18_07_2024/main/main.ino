@@ -69,10 +69,10 @@ void setup() {
   Serial.begin(9600);
   Serial.println("begin");
   delay(1000);
-  articulacion2.Art2Ofsset();
-  articulacion1.Art360Ofsset();
-  articulacion3.Art3Ofsset();
-  articulacion4.Art360Ofsset();
+  //articulacion2.Art2Ofsset();
+  //articulacion1.Art360Ofsset();
+  //articulacion3.Art3Ofsset();
+  //articulacion4.Art360Ofsset();
 }
 void loop() {
   if (Serial.available() > 0) {
