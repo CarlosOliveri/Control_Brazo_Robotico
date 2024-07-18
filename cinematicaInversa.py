@@ -264,9 +264,11 @@ def Envio_Interpolacion(array):
     algo = arduino.readline().decode().strip()
     print(algo)
     for k in array:
+        q1 = k[0]
+        q2 = k[1]
+        q3 = k[2]
         cont += 1
         respondio = False
-        q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
         if np.isnan(q2):
             q2 = 0
         if np.isnan(q3):
@@ -350,9 +352,12 @@ while(True):
         points[5,0:3] = msg[16:19]
         
         #Verificar si los puntos estan en el espacio de la tarea
-        
+        arrayQs = []
         interpolated_points = Interpolacion(points)
-        Envio_Interpolacion(interpolated_points)
+        for k in interpolated_points:
+            q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
+            arrayQs.append([q1,q2,q3])
+        Envio_Interpolacion(arrayQs)
         
     
     ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
