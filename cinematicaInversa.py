@@ -299,7 +299,7 @@ while(True):
             msg[k] = float(msg[k])
         funcion = msg[0]
     except:
-        print("Mensaje Vacio")
+        print("MENSAJE NO VALIDO")
         continue
     
     type = 1 # Valor por defecto
@@ -308,10 +308,15 @@ while(True):
         if len(msg) < 8 or len(msg) > 8:
             print("No se incluyeron todos los parametros: [G# x y x a b g type]")
         else:
-            type = msg[-1]
+            if msg[-1] == 2 or msg[-1] == 1:
+                type = msg[-1]
             pr = msg[1:4]
             orient = msg[4:7]
             try:
+                r, q, phi = cartesian2polar(pr[0],pr[1],pr[2]-l1) 
+                if r > 40.215:
+                    print("PUNTO FUERA DE RANGO")
+                    continue
                 q1, q2, q3, q4, q5, q6 = inverse_kinematics_P1(pr[0], pr[1], pr[2], orient[0], orient[1], orient[2])  
                 msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(q4) + " " + str(q5) + " " + str(q6) + " " + str(type)         
                 print("[Mensaje enviado] => " + msg)
@@ -341,7 +346,8 @@ while(True):
         if len(msg) < 5 or len(msg) > 5:
             print("No se incluyeron todos los parametros: [G# x y z type]")
         else:
-            type = msg[-1]
+            if msg[-1] == 2 or msg[-1] == 1:
+                type = msg[-1]
             pm = msg[1:4]
             print(pm)
             try: 
@@ -354,39 +360,46 @@ while(True):
                 print("Valores no validos, Verifique y vuelva a intentar!")
         continue
     if funcion == "G2":
-        q = msg[1]
-        alfa = msg[2]
-        velocidad = msg[-1]
-        if velocidad <= 0 or velocidad > 20:
-            print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
+        if len(msg) < 5 or len(msg) > 5:
+            print("No se incluyeron todos los parametros: [G# # a vel]")
         else:
-            if len(msg) < 4 or len(msg) > 4:
-                print("Cantidad de parametros incorrecto: [G# # alpha vel]")
+            q = msg[1]
+            alfa = msg[2]
+            velocidad = msg[-1]
+            if velocidad <= 0 or velocidad > 20:
+                print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
             else:
-                if  q != 1:
-                    if abs(alfa) > 90:
-                        print("EL ANGULO ESTA FUERA DE RANGO")
-                        continue 
-                msg =  funcion +" "+ str(q) + " " + str(alfa) + " " + str(velocidad)         
-                print("[Mensaje enviado] => " + msg)
-                Envio_mensaje(msg)
+                if len(msg) < 4 or len(msg) > 4:
+                    print("Cantidad de parametros incorrecto: [G# # alpha vel]")
+                else:
+                    if  q != 1:
+                        if abs(alfa) > 90:
+                            print("EL ANGULO ESTA FUERA DE RANGO")
+                            continue 
+                    msg =  funcion +" "+ str(q) + " " + str(alfa) + " " + str(velocidad)         
+                    print("[Mensaje enviado] => " + msg)
+                    Envio_mensaje(msg)
+            continue
         continue
-    
     if funcion == "G13":
-        q = msg[1]
-        alfa = msg[2]
-        velocidad = msg[3]
-        beta1 = msg[4]
-        beta2 = msg[5]
-        if velocidad <= 0 or velocidad > 20:
-            print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
-        if  q != 1:
-            if abs(alfa) > 90 or abs(beta1) > 90 or abs(beta2) > 90:
-                print("UNO DE LOS ANGULOS ESTA FUERA DE RANGO")
-                continue
-        msg = funcion + " " + str(q) + " " + str(alfa) + " " + str(velocidad) + " " + str(beta1) + " " + str(beta2)
-        print("[Mensaje enviado] => " + msg)
-        Envio_mensaje(msg)
+        if len(msg) < 6 or len(msg) > 6:
+            print("No se incluyeron todos los parametros: [G# # a vel b1 b2]")
+        else:
+            q = msg[1]
+            alfa = msg[2]
+            velocidad = msg[3]
+            beta1 = msg[4]
+            beta2 = msg[5]
+            if velocidad <= 0 or velocidad > 20:
+                print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
+            if  q != 1:
+                if abs(alfa) > 90 or abs(beta1) > 90 or abs(beta2) > 90:
+                    print("UNO DE LOS ANGULOS ESTA FUERA DE RANGO")
+                    continue
+            msg = funcion + " " + str(q) + " " + str(alfa) + " " + str(velocidad) + " " + str(beta1) + " " + str(beta2)
+            print("[Mensaje enviado] => " + msg)
+            Envio_mensaje(msg)
+            continue
         continue
     if funcion == "STR":
         points = np.array([ [0, 0, 0],        # Punto 1
@@ -433,7 +446,7 @@ while(True):
 # STR 15 25 28.2 0 25 43.2 -15 25 28.2 0 25 13.2 15 25 28.2 0 25 43.2 Movimiendo de circulo en el plano Y
 #G1 12 15 45.2
 #G1 13 -15 404
-#G1 -15 12 45
+#G1 -15 12 45 1
 #G1 13 16 46
 #G2 1 
 #P1 26.215 0 36.2 0 -90 0 1
