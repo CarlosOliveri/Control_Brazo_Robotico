@@ -360,7 +360,7 @@ while(True):
                 print("Valores no validos, Verifique y vuelva a intentar!")
         continue
     if funcion == "G2":
-        if len(msg) < 5 or len(msg) > 5:
+        if len(msg) < 4 or len(msg) > 4:
             print("No se incluyeron todos los parametros: [G# # a vel]")
         else:
             q = msg[1]
@@ -370,7 +370,7 @@ while(True):
                 print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
             else:
                 if len(msg) < 4 or len(msg) > 4:
-                    print("Cantidad de parametros incorrecto: [G# # alpha vel]")
+                    print("Cantidad de parametros incorrecto: [G# # a vel]")
                 else:
                     if  q != 1:
                         if abs(alfa) > 90:
