@@ -52,7 +52,7 @@ def direct_kinematics(q1,q2,q3,q4,q5,q6):
     _0A6 = np.dot(_0A5,A56(q6))
     return _0A6     
 
-def inverse_kinematics(x, y,z, a, b, g):
+def inverse_kinematics_P1(x, y,z, a, b, g):
     signoQ3=-1
     codo = 1
     
@@ -143,30 +143,97 @@ def inverse_kinematics(x, y,z, a, b, g):
    
     return q1, q2, q3, q4, q5, q6
 
+def inverse_kinematics_G1(x, y, z):
+    signoQ3=-1
+    codo = 1
+
+    #Calculo de punto muñeca
+    pmx = x
+    pmy = y
+    pmz = z - l1
+        
+    print("Punto Muñeca Calculado: ")       
+    print(pmx,pmy,pmz) #debug
+    
+    # Halla q1
+    q1 = np.arctan2(pmy,pmx)
+    if q1 > np.pi or q1 < -np.pi:
+        print("fuera del rango")
+        return None
+    
+    #q3
+    cosq3=(pmx**2+pmy**2+pmz**2-l2**2-l3**2)/(2*l2*l3)
+    sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
+    q3=np.arctan2(sinq3,cosq3)
+    if q3 > np.pi/1.9 or q3 < -np.pi/1.9:
+        signoQ3*=-1
+        sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
+        q3=np.arctan2(sinq3,cosq3)
+        if q3 > np.pi/1.9 or q3 < -np.pi/1.9:
+            print("fuera del rango")
+            return None
+    #print(q3)
+    
+    #q2
+    q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
+    if q2 > np.pi/1.9 or q2 < -np.pi/1.9:
+        codo*=-1
+        q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
+        if q2 > np.pi/1.9 or q2 < -np.pi/1.9:
+            print("fuera del rango")
+            return None
+    #print(q2)
+    
+    q1 = np.degrees(q1).round(decimals=3)
+    q2 = np.degrees(q2).round(decimals=3)
+    q3 = np.degrees(q3).round(decimals=3)
+    print("q1: ", str(q1))
+    print("q2: ", str(q2))
+    print("q3: ", str(q3))
+
+    return q1, q2, q3
+
 while(True):
     msg = input("[Escriba el comando] => ")
     msg = msg.strip()
     msg = msg.split()
-    for k in range(0,len(msg)):
+    for k in range(1,len(msg) - 1):
         msg[k] = float(msg[k])
-        
-    if msg[-1] <= 0 or msg[-1] > 20:
-        print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
-    else:
-        #print(msg) #debug
-        pr = msg[0:3]
-        orient = msg[3:6]
-        
-        try:
-            q1, q2, q3, q4, q5, q6 = inverse_kinematics(pr[0], pr[1], pr[2], orient[0], orient[1], orient[2])  
-            msg =  str(q1) + " , " + str(q2) + " , " + str(q3) + " , " + str(q4) + " , " + str(q5) + " , " + str(q6) + " , " + str(msg[-1])        
-            print("[Mensaje enviado] => " + msg) 
-            print("Cinematica Directa:")
-            print(direct_kinematics(q1,q2,q3,q4,q5,q6))
-        except:
-            print("Valores no validos, Verifique y vuelva a intentar!")
-        
-        ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
-        #arduino.write(msg.encode())
-        #respuesta = arduino.readline().decode().strip()
-        #print("[Mensaje Recibido] => " + respuesta)}
+    funcion = msg[0]
+    type = msg[-1]
+
+    if funcion == "P1":
+        if len(msg) < 8 or len(msg) > 8:
+            print("No se incluyeron todos los parametros: [G# x y x a b g type]")
+        else:
+            pr = msg[1:4]
+            orient = msg[4:7]
+            try:
+                q1, q2, q3, q4, q5, q6 = inverse_kinematics_P1(pr[0], pr[1], pr[2], orient[0], orient[1], orient[2])  
+                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(q4) + " " + str(q5) + " " + str(q6) + " " + type         
+                print("[Mensaje enviado] => " + msg)
+            except:
+                print("Valores no validos, Verifique y vuelva a intentar!")
+    if funcion == "G1":
+        if len(msg) < 5 or len(msg) > 5:
+            print("No se incluyeron todos los parametros: [G# x y z type]")
+        else:
+            pm = msg[1:4]
+            print(pm)
+            try: 
+                q1, q2, q3 = inverse_kinematics_G1(pm[0], pm[1], pm[2])
+                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + type         
+                print("[Mensaje enviado] => " + msg)
+            except:
+                print("Valores no validos, Verifique y vuelva a intentar!")
+    if funcion == "G2":
+        velocidad = msg[-1]
+        if velocidad <= 0 or velocidad > 20:
+            print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
+        else:
+            print(msg)
+    
+    ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
+    #arduino.write(msg.encode())
+    #respuesta = arduino.readline().decode().strip()
+    #print("[Mensaje Recibido] => " + respuesta)}
