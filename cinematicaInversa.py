@@ -4,8 +4,7 @@ from scipy.interpolate import CubicSpline
 
 COM = 'COM5'
 ##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
-arduino = None
-#arduino = serial.Serial(COM,9600)
+arduino = serial.Serial(COM,9600)
 time.sleep(2)
 
 l1 = 20.2 #cm
@@ -257,23 +256,30 @@ def Interpolacion(points):
 def Envio_mensaje(msg):
     #Arriba hay que descomentar la definicion del objeto arduino
     #Arduino en tiempo de debugger es NONE
-    #arduino.write(msg.encode())
-    pass
+    arduino.write(msg.encode())
+    #pass
 
 def Envio_Interpolacion(array):
     cont = 0
+    algo = arduino.readline().decode().strip()
+    print(algo)
     for k in array:
         cont += 1
         respondio = False
         q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
+        if np.isnan(q2):
+            q2 = 0
+        if np.isnan(q3):
+            q3 = 0
         #msg =  "STR" +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type) 
-        msg = str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)         
-        print("[Mensaje enviado] => " + str(cont) + " " + msg)
+        msg = str(q1) + "," + str(q2) + "," + str(q3) + "," + str(type)         
         Envio_mensaje(msg)
-        while not respondio:
+        print("[Mensaje enviado] => " + str(cont) + " " + msg)
+        while respondio == False:
             #time.sleep(2) #simulacion
             response = ""
             response = arduino.readline().decode().strip()
+            print(response)
             if response == "Listo":
                 respondio = True
 
