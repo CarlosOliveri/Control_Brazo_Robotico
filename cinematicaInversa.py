@@ -279,13 +279,13 @@ def Envio_Interpolacion(array):
         msg = msg + " " + str(q1) + " " + str(q2) + " " +str(q3)
     Envio_mensaje(msg)
     print("[Mensaje enviado] => " + msg)
-    """ while respondio == False:
+    while respondio == False:
         time.sleep(2) #simulacion
         response = "Listo"
         #response = arduino.readline().decode().strip()
         print(response)
         if response == "Listo":
-            respondio = True """
+            respondio = True
 
         
 
@@ -352,8 +352,8 @@ while(True):
             print(pm)
             try: 
                 q1, q2, q3 = inverse_kinematics_G1(pm[0], pm[1], pm[2])
-                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)
-                #msg = str(q1) + "," + str(q2) + "," + str(q3) + "," + str(type)         
+                #msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)
+                msg = str(q1) + "," + str(q2) + "," + str(q3) + "," + str(type)         
                 print("[Mensaje enviado] => " + msg)
                 Envio_mensaje(msg)
             except:
@@ -376,7 +376,8 @@ while(True):
                         if abs(alfa) > 90:
                             print("EL ANGULO ESTA FUERA DE RANGO")
                             continue 
-                    msg =  funcion +" "+ str(q) + " " + str(alfa) + " " + str(velocidad)         
+                    #msg =  funcion +" "+ str(q) + " " + str(alfa) + " " + str(velocidad)
+                    msg =  str(q) + "," + str(alfa) + "," + str(velocidad)         
                     print("[Mensaje enviado] => " + msg)
                     Envio_mensaje(msg)
             continue
@@ -396,7 +397,8 @@ while(True):
                 if abs(alfa) > 90 or abs(beta1) > 90 or abs(beta2) > 90:
                     print("UNO DE LOS ANGULOS ESTA FUERA DE RANGO")
                     continue
-            msg = funcion + " " + str(q) + " " + str(alfa) + " " + str(velocidad) + " " + str(beta1) + " " + str(beta2)
+            #msg = funcion + " " + str(q) + " " + str(alfa) + " " + str(velocidad) + " " + str(beta1) + " " + str(beta2)
+            msg = str(q) + "," + str(alfa) + "," + str(velocidad) + "," + str(beta1) + "," + str(beta2)
             print("[Mensaje enviado] => " + msg)
             Envio_mensaje(msg)
             continue
@@ -425,6 +427,8 @@ while(True):
             Envio_Interpolacion(arrayQs)
         except:
             print("UNO DE LOS PUNTOS DE LA INTERPOLACION ESTA FUERA DEL RANGO")
+            print("Se enviaron los valores aceptados")
+            #Envio_Interpolacion(arrayQs)
         continue
     if funcion == "GTR":
         if len(msg) > 1 or len(msg) < 1:
