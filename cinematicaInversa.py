@@ -1,8 +1,10 @@
 import numpy as np
 import serial, time
+from scipy.interpolate import CubicSpline
 
 COM = 'COM5'
 ##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
+arduino = None
 #arduino = serial.Serial(COM,9600)
 time.sleep(2)
 
@@ -193,37 +195,127 @@ def inverse_kinematics_G1(x, y, z):
 
     return q1, q2, q3
 
+def cartesian2polar(x,y,z):
+    r = np.sqrt(x**2 + y**2 + z**2)
+    Q = np.arctan2(y,x)
+    phi = np.arccos(z/r) 
+    return r,Q,phi
+
+def polar2cartesian(r,q,phi):
+    x = r*np.sin(phi)*np.cos(q)
+    y = r*np.sin(phi)*np.sin(q)
+    z = r*np.cos(phi)
+    return x, y, z
+
+def Interpolacion(points):
+    print(points)
+    # Extraer los puntos individuales
+    x_points = points[:, 0]
+    y_points = points[:, 1]
+    z_points = points[:, 2]
+
+    # Crear una secuencia de valores t para los puntos originales
+    t_points = np.linspace(0, 1, len(points))
+
+    # Crear una secuencia de valores t para la interpolación (30 puntos)
+    t_interpolated = np.linspace(0, 1, 30)
+
+    # Realizar la interpolación cúbica
+    cs_x = CubicSpline(t_points, x_points,bc_type = 'clamped')
+    cs_y = CubicSpline(t_points, y_points,bc_type = 'clamped')
+    cs_z = CubicSpline(t_points, z_points,bc_type = 'clamped')
+
+    # Generar los puntos interpolados
+    x_interpolated = cs_x(t_interpolated)
+    y_interpolated = cs_y(t_interpolated)
+    z_interpolated = cs_z(t_interpolated)
+
+    # Guardar los puntos interpolados en una matriz
+    interpolated_points = np.vstack((x_interpolated, y_interpolated, z_interpolated)).T
+
+    for k in interpolated_points:
+        r,q,phi = cartesian2polar(k[0], k[1], k[2]) #Max = 40.415 Min = 25.224 
+        k[2] = k[2] - 20.2
+        print(r,q,phi)
+        if r < 26:
+            r = 26
+            x, y, z = polar2cartesian(r,q,phi)
+            k [0] = x
+            k [1] = y
+            k [2] = z + 20.1
+        if r > 40:
+            r = 40
+            x, y, z = polar2cartesian(r,q,phi)
+            k [0] = x
+            k [1] = y
+            k [2] = z + 20.1
+        
+        print("Puntos de la interpolacion:")
+        print(interpolated_points)
+        return interpolated_points
+
+def Envio_mensaje(msg):
+    #Arriba hay que descomentar la definicion del objeto arduino
+    #Arduino en tiempo de debugger es NONE
+    #arduino.write(msg.encode())
+    pass
+
+def Envio_Interpolacion(array):
+    cont = 0
+    for k in array:
+        cont += 1
+        respondio = False
+        q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
+        #msg =  "STR" +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type) 
+        msg = str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)         
+        print("[Mensaje enviado] => " + str(cont) + " " + msg)
+        Envio_mensaje(msg)
+        while not respondio:
+            #time.sleep(2) #simulacion
+            response = ""
+            response = arduino.readline().decode().strip()
+            if response == "Listo":
+                respondio = True
+
+        
+
 while(True):
+    #STR XA YA ZA XB YB ZB XC YC ZC XD YD ZD XE YE ZE XF YF ZF
     msg = input("[Escriba el comando] => ")
     msg = msg.strip()
     msg = msg.split()
-    for k in range(1,len(msg) - 1):
+    for k in range(1,len(msg)):
         msg[k] = float(msg[k])
     funcion = msg[0]
-    type = msg[-1]
-
+    
+    type = 1 # Valor por defecto
+    
     if funcion == "P1":
         if len(msg) < 8 or len(msg) > 8:
             print("No se incluyeron todos los parametros: [G# x y x a b g type]")
         else:
+            type = msg[-1]
             pr = msg[1:4]
             orient = msg[4:7]
             try:
                 q1, q2, q3, q4, q5, q6 = inverse_kinematics_P1(pr[0], pr[1], pr[2], orient[0], orient[1], orient[2])  
-                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(q4) + " " + str(q5) + " " + str(q6) + " " + type         
+                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(q4) + " " + str(q5) + " " + str(q6) + " " + str(type)         
                 print("[Mensaje enviado] => " + msg)
+                Envio_mensaje(msg)
             except:
                 print("Valores no validos, Verifique y vuelva a intentar!")
     if funcion == "G1":
         if len(msg) < 5 or len(msg) > 5:
             print("No se incluyeron todos los parametros: [G# x y z type]")
         else:
+            type = msg[-1]
             pm = msg[1:4]
             print(pm)
             try: 
                 q1, q2, q3 = inverse_kinematics_G1(pm[0], pm[1], pm[2])
-                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + type         
+                msg =  funcion +" "+ str(q1) + " " + str(q2) + " " + str(q3) + " " + str(type)         
                 print("[Mensaje enviado] => " + msg)
+                Envio_mensaje(msg)
             except:
                 print("Valores no validos, Verifique y vuelva a intentar!")
     if funcion == "G2":
@@ -231,9 +323,43 @@ while(True):
         if velocidad <= 0 or velocidad > 20:
             print("Valor de velocidad fuera de rango!, valores aceptados: [ 0 < vel <= 20 ]")
         else:
-            print(msg)
+            if len(msg) < 4 or len(msg) > 4:
+                print("Cantidad de parametros incorrecto: [G# # alpha vel]")
+            else:
+                msg =  funcion +" "+ str(msg[1]) + " " + str(msg[2]) + " " + str(velocidad)         
+                print("[Mensaje enviado] => " + msg)
+                Envio_mensaje(msg)
+    if funcion == "STR":
+        points = np.array([ [0, 0, 0],        # Punto 1
+                            [0, 0, 0],  # Punto 2
+                            [0, 0, 0],  # Punto 3
+                            [0, 0, 0],  # Punto 4
+                            [0, 0, 0],
+                            [0, 0, 0]])
+        points[0,0:3] = msg[1:4]
+        points[1,0:3] = msg[4:7]
+        points[2,0:3] = msg[7:10]
+        points[3,0:3] = msg[10:13]
+        points[4,0:3] = msg[13:16]
+        points[5,0:3] = msg[16:19]
+        
+        #Verificar si los puntos estan en el espacio de la tarea
+        
+        interpolated_points = Interpolacion(points)
+        Envio_Interpolacion(interpolated_points)
+        
     
     ## DESCOMENTAR LAS TRES LINEAS DE ABAJO PARA VERIFICAR LA RECEPCION DEL MENSAJE   
     #arduino.write(msg.encode())
     #respuesta = arduino.readline().decode().strip()
     #print("[Mensaje Recibido] => " + respuesta)}
+    
+#Funciones
+# STR 15 15 35 21.7 13.2 37.7 23.9 12.9 43.5 10.2 14.5 44.2 -8 16.5 45.9 -12.4 15.7 45.7
+#G1 16.38 19.53 23.95 1
+#G1 12 15 45.2
+#G1 13 -15 404
+#G1 -15 12 45
+#G1 13 16 46
+#G2 1 
+#P1 26.215 0 36.2 0 -90 0 1
