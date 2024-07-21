@@ -4,6 +4,7 @@ from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 
 SIMULACION = True # Acciona los mensajes de Debug y desactiva la comunicacion Serial
+GRAFICAR = False # Activa los graficos ve visualizacion de trayectoria previa
 OK_POINT = 0
 Q1_OUT_RANGE = "Q1 FUERA DE RANGO"
 Q2_OUT_RANGE = "Q2 FUERA DE RANGO"
@@ -278,14 +279,14 @@ def Interpolacion_workSpace(points):
         #print(r,q,phi)
         if phi < -49:
             phi = -48
-        if r < 25.2:
-            r = 25
+        if r < 26.2:
+            r = 26.5
             x, y, z = polar2cartesian(r,q,phi)
             x_corregido.append(x)
             y_corregido.append(y)
             z_corregido.append(z + 20.2)
         elif r > 35.4:
-            r = 35.4
+            r = 35
             x, y, z = polar2cartesian(r,q,phi)
             x_corregido.append(x)
             y_corregido.append(y)
@@ -303,7 +304,7 @@ def Interpolacion_workSpace(points):
         print(interpolated_points)
         
     # Visualizar la trayectoria original e interpolada
-    if SIMULACION == True:
+    if GRAFICAR == True:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot(x_points, y_points, z_points, '*', label='Puntos originales')
@@ -375,7 +376,7 @@ def interpolacion_QsSpace(points):
     interpolated_points = np.vstack((q1_corregido, q2_corregido, q3_corregido)).T
 
     # Visualizar la trayectoria original e interpolada
-    if SIMULACION == True:
+    if GRAFICAR == True:
         fig = plt.figure()
         ax = fig.add_subplot(311)
         ax.plot( t_interpolated,q1_interpolated, '-', label='Puntos Interpolados y corregidos')

@@ -95,8 +95,8 @@ for k in interpolated_points:
         z_corregido.append(z + 20.2)
         #print("new:")
         #print(r,q,phi)
-    elif r > 35.5:
-        r = 35.5
+    elif r > 35.4:
+        r = 35.4
         x, y, z = polar2cartesian(r,q,phi)
         x_corregido.append(x)
         y_corregido.append(y)
