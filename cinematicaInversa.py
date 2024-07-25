@@ -739,6 +739,10 @@ while(True):
         interpolated_points = interpolacion_QsSpace(points)
         Envio_Interpolacion(interpolated_points)
         continue
+    if funcion == "F00":
+        msg = funcion
+        Envio_mensaje(msg)
+        continue
     print("NO CORRESPONDE A NINGUN COMANDO")
     
 #Funciones
