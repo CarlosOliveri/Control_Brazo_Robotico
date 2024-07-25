@@ -2,9 +2,12 @@ import numpy as np
 import serial, time
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
 
 SIMULACION = True # Acciona los mensajes de Debug y desactiva la comunicacion Serial
 GRAFICAR = False # Activa los graficos ve visualizacion de trayectoria previa
+#interpolated_points = []
 OK_POINT = 0
 Q1_OUT_RANGE = "Q1 FUERA DE RANGO"
 Q2_OUT_RANGE = "Q2 FUERA DE RANGO"
@@ -14,7 +17,19 @@ Q5_OUT_RANGE = "Q5 FUERA DE RANGO"
 Q6_OUT_RANGE = "Q6 FUERA DE RANGO"
 OUT_WORK_SPACE = "FUERA DEL ESPACIO DE TRABAJO"
 
-COM = 'COM5'
+if SIMULACION == True:
+    print("ESTAS EN MODO SIMULACION!!!!!!")
+    opcion = input("CAMBIAR A MODO RUN?????, Y / -")
+    if opcion == "y" or opcion == "Y":
+        SIMULACION = False
+    
+opcion = input("DESEA PODER GRAFICAR LAS TRAYECTORIAS???? Y / -")
+if opcion == "Y" or opcion == "y":
+    GRAFICAR = True
+
+      
+
+COM = 'COM7'
 ##DESCOMENTAR LA LINEA DE ABAJO PARA LA COMUNICACION SERIAL CON EL ARDUINO
 if SIMULACION == False:
     arduino = serial.Serial(COM,115200)
@@ -102,18 +117,18 @@ def inverse_kinematics_P1(x, y,z, a, b, g):
         return OUT_WORK_SPACE
     sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
     q3=np.arctan2(sinq3,cosq3)
-    if q3 > np.pi/2.1 or q3 < -np.pi/2.1:
+    if q3 > np.pi/2 or q3 < -np.pi/2:
         signoQ3*=-1
         sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
         q3=np.arctan2(sinq3,cosq3)
-        if q3 > np.pi/2.1 or q3 < -np.pi/2.1:
+        if q3 > np.pi/2 or q3 < -np.pi/2:
             return Q3_OUT_RANGE
     #Hallar q2
     q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
-    if q2 > np.pi/2.1 or q2 < -np.pi/2.1:
+    if q2 > np.pi/2 or q2 < -np.pi/2:
         codo*=-1
         q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
-        if q2 > np.pi/2.1 or q2 < -np.pi/2.1:
+        if q2 > np.pi/2 or q2 < -np.pi/2:
             return Q2_OUT_RANGE
         
     cosq1=np.cos(q1)
@@ -136,9 +151,12 @@ def inverse_kinematics_P1(x, y,z, a, b, g):
     q5 = np.degrees(q5)
     q6 = np.degrees(q6) """
     
+    #q5=np.arccos(-a[0]*cosq1*(cosq2*sinq3+cosq3*sinq2)-a[1]*sinq1*(cosq2*sinq3+cosq3*sinq2)+a[2]*(cosq2*cosq3-sinq2*sinq3))
     q5=np.arccos(-a[0]*cosq1*(cosq2*sinq3+cosq3*sinq2)-a[1]*sinq1*(cosq2*sinq3+cosq3*sinq2)+a[2]*(cosq2*cosq3-sinq2*sinq3))
-    if q5 > np.pi/2 or q5 < -np.pi/2:
+    if q5 > np.pi or q5 < 0:
+        print("q5:",q5)
         return Q5_OUT_RANGE
+        #pass
     sinq5=np.sin(q5)
 
     q4=np.arctan2((cosq1*a[1]-sinq1*a[0]),abs(a[2]*(cosq2*sinq3+cosq3*sinq2)+(cosq2*cosq3-sinq2*sinq3)*(a[1]*sinq1+a[0]*cosq1)))
@@ -163,6 +181,8 @@ def inverse_kinematics_P1(x, y,z, a, b, g):
 def inverse_kinematics_G1(x, y, z, corregir = False):
     signoQ3=-1
     codo = 1
+    
+    #print("Corregir", corregir)
 
     #Calculo de punto muñeca
     pmx = x
@@ -177,18 +197,20 @@ def inverse_kinematics_G1(x, y, z, corregir = False):
     
     # Halla q1
     q1 = np.arctan2(pmy,pmx)
-    if q1 > np.pi or q1 < -np.pi:
+    if q1 < 0:
+        q1 = np.pi*2 + q1
+    """ if q1 > np.pi or q1 < -np.pi:
         if corregir == False:
             return Q1_OUT_RANGE
         else:
             if q1 < 0:
-                q1 = np.pi
+                q1 = np.pi """
     
     #q3
     cosq3=(pmx**2+pmy**2+pmz**2-l2**2-l3**2)/(2*l2*l3)
     if cosq3 < -1:
         cosq3 = int(cosq3)
-    if cosq3 > 1:
+    if cosq3 > 1 or cosq3 < 0.0871:
         if corregir == False:
             return OUT_WORK_SPACE
         else:
@@ -199,9 +221,9 @@ def inverse_kinematics_G1(x, y, z, corregir = False):
         signoQ3*=-1
         sinq3=(signoQ3)*np.sqrt(1-cosq3**2)
         q3=np.arctan2(sinq3,cosq3)
-        if q3 > np.pi/2.1 or q3 < -np.pi/2.1:
+        if q3 > np.pi/2 or q3 < -np.pi/2:
+            print("q3:",q3,cosq3)
             return Q3_OUT_RANGE
-    #print(q3)
     
     #q2
     q2=(np.arctan2(pmz,(codo*np.sqrt(pmx**2+pmy**2))) - np.arctan2((l3*sinq3),(l2+l3*cosq3)))-np.pi/2
@@ -326,12 +348,17 @@ def interpolacion_QsSpace(points):
     q1_points_corregidos = []
     q3_points_corregidos = []
     q2_points_corregidos = []
-    for k in points:
-        q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2],corregir=True)
-        # Extraer los puntos individuales
-        q1_points_corregidos.append(q1)
-        q2_points_corregidos.append(q2)
-        q3_points_corregidos.append(q3)
+
+    try:
+        for k in points:
+            q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2],corregir=True)
+            # Extraer los puntos individuales
+            q1_points_corregidos.append(int(q1))
+            q2_points_corregidos.append(int(q2))
+            q3_points_corregidos.append(int(q3))
+    except:
+        ERROR = inverse_kinematics_G1(k[0],k[1],k[2],corregir=True)
+        print(ERROR)
     q1_points_corregidos = np.array(q1_points_corregidos)
     q2_points_corregidos = np.array(q2_points_corregidos)
     q3_points_corregidos = np.array(q3_points_corregidos)
@@ -373,7 +400,11 @@ def interpolacion_QsSpace(points):
         q1_corregido.append(q1)
         q2_corregido.append(q2)
         q3_corregido.append(q3)
-    interpolated_points = np.vstack((q1_corregido, q2_corregido, q3_corregido)).T
+    #interpolated_points = np.vstack((q1_corregido, q2_corregido, q3_corregido)).T
+    
+    arrayQs = []
+    for k in range(0,len(q1_corregido)):
+        arrayQs.append([int(q1_corregido[k]),int(q2_corregido[k]),int(q3_corregido[k])])
 
     # Visualizar la trayectoria original e interpolada
     if GRAFICAR == True:
@@ -390,7 +421,7 @@ def interpolacion_QsSpace(points):
         ax.legend()
         plt.show()
         
-    return interpolated_points
+    return arrayQs
 #######################################################
 def Envio_mensaje(msg):
     #Arriba hay que descomentar la definicion del objeto arduino
@@ -424,14 +455,89 @@ def Envio_Interpolacion(array):
     print("[Mensaje enviado] => " + msg)
     if SIMULACION == False:
         while respondio == False:
-            #time.sleep(2) #simulacion
             response = "ESPERANDO..."
             response = arduino.readline().decode().strip()
+            print(response)
             if response == "Listo":
-                print(response)
+                #print(response)
                 respondio = True
                 print("BUFFER CARGADO CORRECTAMENTE")
                 print("CONTROLADOR LISTO PARA RECIBIR SIGUIENTE COMANDO")
+                
+##################### Graficador en tiempo real ################
+def create_3d_animation(num_points=30, interval=50):
+    # Create figure and 3D axis
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Set the viewing angle
+    ax.view_init(30, 30)
+
+    # Create data for a 3D scatter plot
+    #t = np.linspace(0, 4 * np.pi, num_points)
+    x = []
+    y = []
+    z = []
+    for k in interpolated_points:
+        x.append(k[0])
+        y.append(k[1])
+        z.append(k[2])
+    
+    scatter = ax.scatter([], [], [], c='r', marker='o')
+    line, = ax.plot([], [], [], 'b-', lw=2)
+    
+    # Set axis limits
+    """ ax.set_xlim((-100, 100))
+    ax.set_ylim((-100, 100))
+    ax.set_zlim((0, 70)) """
+
+    # State variable
+    data = {'puntoRealizado': True, 'index': 0}
+
+    # Initialization function
+    def init():
+        scatter._offsets3d = ([], [], [])
+        ax.plot(x,y,z)
+        return scatter, line
+
+    # Animation function
+    def animate(i):
+        ##LEER SERIAL AQUI
+        #response = arduino.read()
+        respondio = False
+        while respondio == False:
+            response = arduino.readline().decode().strip()
+            if response == "1":
+                respondio = True          
+        data['puntoRealizado'] = True
+        respondio = False
+            
+       
+        scatter._offsets3d = (x[:data['index']], y[:data['index']], z[:data['index']])
+        data['index'] += 1
+        if data['puntoRealizado']:
+            pass
+            #data['num'] = False
+        else:
+            pass
+            #scatter._offsets3d = (x[:data['index']], y[:data['index']], z[:data['index']])
+        return scatter
+            #data['num'] = True
+ 
+    # Create the animation
+    anim = FuncAnimation(
+        fig,               # The figure object
+        animate,           # The function to update the plot
+        init_func=init,    # The initialization function
+        frames=num_points, # Number of frames
+        interval=interval, # Delay between frames in milliseconds
+        blit=False         # Do not use blitting
+    )
+
+    # Display the animation
+    plt.show()
+
+#create_3d_animation(num_points=30, interval=10)
 
         
 ##################### PROGRAMA PRINCIPAL #####################
@@ -570,7 +676,7 @@ while(True):
 
         try:
             for k in points:
-                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
+                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2],corregir= True)
         except:
             print("UNO DE LOS PUNTOS ESTA FUERA DEL ESPACIO DE TRABAJO")
             opcion = input("CONTINUAR Y CORREGIR DE FORMA AUTOMATICA? Y / -")
@@ -586,8 +692,8 @@ while(True):
             for k in interpolated_points:
                 if SIMULACION == True:
                     print(k)
-                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2])
-                arrayQs.append([q1,q2,q3])
+                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2],corregir = True)
+                arrayQs.append([int(q1),int(q2),int(q3)])
             Envio_Interpolacion(arrayQs)
         except:
             ERROR = inverse_kinematics_G1(k[0],k[1],k[2])
@@ -601,12 +707,31 @@ while(True):
             msg = funcion
             print("[Mensaje enviado] => " + msg)
             Envio_mensaje(msg)
+        #create_3d_animation(num_points=30, interval=500)
+        respondio = False
+        while respondio == False:
+            response = arduino.readline().decode().strip()
+            print(response)
+            if response == "WAITING COMMAND":
+                print(response)
+                respondio = True
         continue
     if funcion == "STRQ":
         points = []
         for k in range(1,len(msg)-2,3):
             points.append(msg[k:k+3])
         points = np.array(points)
+        
+        try:
+            for k in points:
+                q1, q2, q3 = inverse_kinematics_G1(k[0],k[1],k[2],corregir= True)
+        except:
+            print("UNO DE LOS PUNTOS ESTA FUERA DEL ESPACIO DE TRABAJO")
+            opcion = input("CONTINUAR Y CORREGIR DE FORMA AUTOMATICA? Y / -")
+            if opcion == "y" or opcion == "Y":
+                pass
+            else:
+                continue
         
         if SIMULACION == True:
             print(points)    
@@ -623,9 +748,16 @@ while(True):
 # STR 21 21.3 28.2 30 0 28.2 0 30 28.2 -30 0 28.2 0 -30 28.2 30 0 28.2  Movimiendo de circulo en el plano X
 # STR 16 0 44.415 0 16 44.415 -16 0 44.415 0 -16 44.415 16 0 44.415 0 16 44.415 Movimiendo de circulo en el plano X
 # STRQ 15 15 35 21.7 13.2 37.7 23.9 12.9 43.5 10.2 14.5 44.2
+############################
+# STR 19.5 0 36.2 0 19.2 36.2 -19.5 0 36.2 0 -19.5 36.2 19.5 0 36.2
+# STR 15 25 28.2 0 25 43.2 -15 25 28.2 0 25 13.2 15 25 28.2 0 25 43.2
+#
+# G1 23.09 19.38 36.56 
 #G1 12 15 45.2
 #G1 13 -15 404
 #G1 -15 12 45 1
 #G1 13 16 46
 #G2 1 
-#P1 26.215 0 36.2 0 -90 0 1
+# G13 1 360 20 90 270
+# P1 15 15 40 0 -90 0 1
+# P1 -26.215 0 36.2 0 90 0 1
