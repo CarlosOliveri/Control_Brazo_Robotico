@@ -727,7 +727,7 @@ void handleGoTrajectory(){
       articulacion2.motor2.runSpeedToPosition();
       articulacion3.motor1.runSpeedToPosition();
     }
-    #Serial.print("1");
+    //Serial.print("1");
   }
       
   for (int i = 0; i < 30; i++) {
